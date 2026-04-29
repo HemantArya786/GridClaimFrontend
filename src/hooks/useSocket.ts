@@ -32,7 +32,8 @@ export function useSocketBootstrap() {
   const pushActivity = useTileStore((s) => s.pushActivity);
   const clearPending = useTileStore((s) => s.clearPending);
 
-  const ready = !!(userId && username && color);
+  const isValidId = userId && /^[0-9a-fA-F]{24}$/.test(userId);
+  const ready = !!(isValidId && username && color);
   const startedRef = useRef(false);
 
   // 1. Initial Grid Load (REST)
@@ -40,7 +41,12 @@ export function useSocketBootstrap() {
     const fetchInitialGrid = async () => {
       try {
         const tiles = await Api.fetchGrid();
-        hydrate(tiles);
+        const mapped = tiles.map((t: any) => ({
+          ...t,
+          ownerColor: t.color || t.ownerColor,
+          claimedAt: t.claimedAt ? new Date(t.claimedAt).getTime() : null,
+        }));
+        hydrate(mapped);
       } catch (err) {
         console.warn("REST grid fetch failed, will retry via socket", err);
       }
@@ -74,10 +80,23 @@ export function useSocketBootstrap() {
 
     const onDisconnect = () => setConnection("disconnected");
     const onReconnectAttempt = () => setConnection("reconnecting");
-    const onGridData = (data: { tiles: Tile[] }) => hydrate(data.tiles);
-    const onTileUpdated = (t: Tile) => {
-      upsertTile(t);
-      pushActivity(t);
+    const onGridData = (data: { tiles: any[] }) => {
+      const mapped = data.tiles.map((t) => ({
+        ...t,
+        ownerColor: t.color || t.ownerColor, // map backend 'color' to 'ownerColor'
+        claimedAt: t.claimedAt ? new Date(t.claimedAt).getTime() : null,
+      }));
+      hydrate(mapped);
+    };
+
+    const onTileUpdated = (t: any) => {
+      const mapped = {
+        ...t,
+        ownerColor: t.color || t.ownerColor,
+        claimedAt: t.claimedAt ? new Date(t.claimedAt).getTime() : null,
+      };
+      upsertTile(mapped);
+      pushActivity(mapped);
     };
     const onLeaderboardUpdated = (data: { leaderboard: LeaderboardEntry[] }) =>
       setLeaderboard(data.leaderboard);

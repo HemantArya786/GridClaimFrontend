@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Shuffle, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+// ... (rest of imports)
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PLAYER_COLORS } from "@/constants/app.constants";
@@ -11,7 +13,11 @@ const SUGGESTIONS = ["Nova", "Atlas", "Echo", "Vega", "Lyra", "Onyx", "Mira", "O
 
 export function UsernameModal() {
   const { id, username, login } = useUserStore();
-  const open = !id || !username;
+  
+  // A valid MongoDB ObjectId is a 24-character hex string.
+  // We check this to force a re-login for users with stale UUIDs from the mock version.
+  const isValidId = id && /^[0-9a-fA-F]{24}$/.test(id);
+  const open = !isValidId || !username;
 
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(() => pickRandomColor());
@@ -35,7 +41,7 @@ export function UsernameModal() {
     try {
       await login(name, color);
     } catch (err: any) {
-      // toast.error("Connection failed", { description: err.message });
+      toast.error("Entry failed", { description: err.message });
       console.error(err);
     } finally {
       setIsLoggingIn(false);

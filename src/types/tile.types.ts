@@ -1,10 +1,11 @@
 export interface Tile {
+  tileId: string;
   x: number;
   y: number;
   ownerId: string | null;
   ownerName: string | null;
   ownerColor: string | null;
-  claimedAt: number | null;
+  claimedAt: string | number | null;
 }
 
 export interface ClaimPayload {
