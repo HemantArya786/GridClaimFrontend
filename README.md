@@ -1,74 +1,210 @@
-# React + TypeScript + Vite
+# Live GridClaim Board
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time multiplayer tile-claiming board built with a modern web stack. Users can claim tiles on a shared grid, compete on a live leaderboard, and see activity updates instantly via WebSockets.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Overview
 
-## React Compiler
+This project is a full-featured frontend for a real-time multiplayer system. It is designed with performance, scalability, and user experience in mind, including optimistic updates, smooth animations, and a fully functional mock backend for demos.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* React 18 + Vite + TypeScript
+* Tailwind CSS
+* Zustand (state management with persistence)
+* Socket.IO Client
+* Framer Motion
+* Sonner (notifications)
+* Lucide (icons)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Features
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Interactive Grid
+
+* 20×20 board (400 tiles)
+* Real-time tile claiming
+* Hover previews and tooltips
+* Smooth claim animations
+* Optimistic UI updates with rollback on failure
+
+### Leaderboard
+
+* Top 10 players ranked by tiles owned
+* Live updates from server
+* Highlight for current user
+* Animated rank transitions
+
+### Stats Dashboard
+
+* Total claimed tiles
+* Remaining tiles
+* User-specific stats and ranking
+
+### Activity Feed
+
+* Real-time feed of tile claims
+* Relative timestamps (auto-updating)
+* Animated entry transitions
+
+### Realtime System
+
+* Socket.IO-based communication
+* Auto reconnect handling
+* Connection status indicator
+
+### Mock Mode (Demo Ready)
+
+* Runs without a backend
+* Simulated players claiming tiles
+* Same API contract as real server
+
+---
+
+## Socket.IO Contract
+
+### Client Emits
+
+```ts
+get-grid
+claim-tile: { x: number, y: number }
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Client Listens
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```ts
+grid-data: Tile[]
+tile-updated: Tile
+claim-failed: { x: number, y: number, reason: string }
+leaderboard-updated: LeaderboardEntry[]
 ```
-# GridClaimFrontend
+
+---
+
+## Project Structure
+
+```
+src/
+├── pages/
+│   ├── Index.tsx
+│   └── NotFound.tsx
+├── components/
+│   ├── Grid/
+│   ├── Leaderboard/
+│   ├── Stats/
+│   ├── Activity/
+│   ├── User/
+│   ├── Header/
+│   └── Common/
+├── hooks/
+│   ├── useSocket.ts
+│   └── useTiles.ts
+├── store/
+│   ├── tileStore.ts
+│   └── userStore.ts
+├── lib/
+│   ├── socket.ts
+│   ├── mockSocket.ts
+│   ├── api.ts
+│   └── utils.ts
+├── types/
+├── constants/
+```
+
+---
+
+## Installation
+
+```bash
+npm install
+```
+
+---
+
+## Development
+
+```bash
+npm run dev
+```
+
+---
+
+## Build and Run
+
+```bash
+npm run build
+npm run preview
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file:
+
+```env
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+If not provided, the app automatically falls back to mock mode.
+
+---
+
+## Architecture Highlights
+
+* Optimistic updates with rollback handling
+* Efficient rendering using tile-level memoization
+* State design using normalized tile storage (`Record<"x:y", Tile>`)
+* Global cooldown system to prevent spam interactions
+* Socket abstraction layer supporting both real and mock implementations
+
+---
+
+## Design System
+
+* Minimal, clean interface
+* Neutral color palette with player colors as accents
+* Responsive layout across desktop, tablet, and mobile
+* Accessible interactions and keyboard support
+
+---
+
+## Responsive Behavior
+
+* Desktop: Grid with sidebar layout
+* Tablet: Sidebar moves below grid
+* Mobile: Fully stacked layout with sticky cooldown bar
+
+---
+
+## Limitations
+
+* No backend included (requires Socket.IO server)
+* No authentication system
+* No persistent database
+
+---
+
+## Future Improvements
+
+* User authentication
+* Persistent game state
+* Multiple game rooms
+* Sound effects and enhanced animations
+* Dark mode
+
+---
+
+## License
+
+MIT License
+
+---
+
+## Author
+
+Built as a real-time system design and frontend engineering project.
