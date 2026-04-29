@@ -63,7 +63,7 @@ export const useTileStore = create<TileState>((set) => ({
         y: t.y,
         username: t.ownerName,
         color: t.ownerColor,
-        at: t.claimedAt ?? Date.now(),
+        at: Number(t.claimedAt) ?? Date.now(),
       };
       return { activity: [ev, ...s.activity].slice(0, ACTIVITY_LIMIT) };
     }),

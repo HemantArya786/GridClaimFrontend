@@ -34,7 +34,7 @@ export function TileTooltip({ hover, tile }: Props) {
               <span className="font-medium">{tile.ownerName}</span>
               {tile.claimedAt && (
                 <span className="text-muted-foreground">
-                  · {relativeTime(tile.claimedAt)}
+                  · {relativeTime(Number(tile.claimedAt))}
                 </span>
               )}
             </>

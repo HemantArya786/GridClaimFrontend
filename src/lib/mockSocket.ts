@@ -9,11 +9,6 @@ import type { LeaderboardEntry } from "@/types/user.types";
 import { randomId, tileKey } from "./utils";
 import type { SocketLike } from "./socket";
 
-/**
- * In-memory adapter that implements the same event contract as the real
- * Socket.IO server. Used as a fallback when no VITE_SOCKET_URL is set so
- * the UI is fully demoable. A few bot players claim tiles on a timer.
- */
 export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
   const handlers = new Map<string, Set<(...args: any[]) => void>>();
   const tiles = new Map<string, Tile>();
@@ -60,8 +55,10 @@ export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
     const list: Tile[] = [];
     for (let y = 0; y < GRID_SIZE; y++) {
       for (let x = 0; x < GRID_SIZE; x++) {
+        const k = tileKey(x, y);
         list.push(
-          tiles.get(tileKey(x, y)) ?? {
+          tiles.get(k) ?? {
+            tileId: k,
             x,
             y,
             ownerId: null,
@@ -78,13 +75,13 @@ export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
   function botTick() {
     if (tiles.size >= TOTAL_TILES) return;
     const bot = bots[Math.floor(Math.random() * bots.length)];
-    // try a few random spots
     for (let i = 0; i < 6; i++) {
       const x = Math.floor(Math.random() * GRID_SIZE);
       const y = Math.floor(Math.random() * GRID_SIZE);
       const k = tileKey(x, y);
       if (tiles.has(k)) continue;
       const t: Tile = {
+        tileId: k,
         x,
         y,
         ownerId: bot.id,
@@ -94,14 +91,13 @@ export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
       };
       tiles.set(k, t);
       emitTo(SOCKET_EVENTS.TILE_UPDATED, t);
-      emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, buildLeaderboard());
+      emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, { leaderboard: buildLeaderboard() });
       return;
     }
   }
 
   function startBots() {
     if (botTimer) return;
-    // seed a few claims so the board doesn't start cold
     for (let i = 0; i < 12; i++) botTick();
     botTimer = setInterval(botTick, 1800);
   }
@@ -116,38 +112,40 @@ export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
     connected: false,
     emit(event, ...args) {
       if (event === SOCKET_EVENTS.GET_GRID) {
-        // simulate latency
         setTimeout(() => {
-          emitTo(SOCKET_EVENTS.GRID_DATA, snapshot());
-          emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, buildLeaderboard());
+          emitTo(SOCKET_EVENTS.GRID_DATA, { tiles: snapshot() });
+          emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, { leaderboard: buildLeaderboard() });
         }, 250);
         return;
       }
       if (event === SOCKET_EVENTS.CLAIM_TILE) {
         const p = args[0] as ClaimPayload;
-        const k = tileKey(p.x, p.y);
+        const k = p.tileId;
         const existing = tiles.get(k);
         if (existing && existing.ownerId) {
           const fail: ClaimFailedPayload = {
-            x: p.x,
-            y: p.y,
+            tileId: k,
             reason: `Tile already owned by ${existing.ownerName}`,
           };
           setTimeout(() => emitTo(SOCKET_EVENTS.CLAIM_FAILED, fail), 80);
           return;
         }
+
+        // Parse x,y from tileId "x_y"
+        const [xs, ys] = k.split("_");
         const t: Tile = {
-          x: p.x,
-          y: p.y,
+          tileId: k,
+          x: parseInt(xs),
+          y: parseInt(ys),
           ownerId: p.userId,
-          ownerName: p.username,
-          ownerColor: p.color,
+          ownerName: "You", // Mock simplification
+          ownerColor: PLAYER_COLORS[2], // Mock simplification
           claimedAt: Date.now(),
         };
         tiles.set(k, t);
         setTimeout(() => {
           emitTo(SOCKET_EVENTS.TILE_UPDATED, t);
-          emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, buildLeaderboard());
+          emitTo(SOCKET_EVENTS.LEADERBOARD_UPDATED, { leaderboard: buildLeaderboard() });
         }, 60);
       }
     },
@@ -174,7 +172,6 @@ export function createMockSocket(auth?: Record<string, unknown>): SocketLike {
     },
   };
 
-  // auth is just consumed; bots never collide with the user id
   void auth;
   return socket;
 }

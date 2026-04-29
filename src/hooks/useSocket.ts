@@ -5,9 +5,9 @@ import { Api } from "@/lib/api";
 import { createSocket, type SocketLike } from "@/lib/socket";
 import { useTileStore } from "@/store/tileStore";
 import { useUserStore } from "@/store/userStore";
-import type { ClaimFailedPayload, Tile } from "@/types/tile.types";
+import type { ClaimFailedPayload } from "@/types/tile.types";
 import type { LeaderboardEntry } from "@/types/user.types";
-import { tileKey } from "@/lib/utils";
+import { relativeTime } from "@/lib/utils";
 
 let singleton: SocketLike | null = null;
 
@@ -98,8 +98,13 @@ export function useSocketBootstrap() {
       upsertTile(mapped);
       pushActivity(mapped);
     };
-    const onLeaderboardUpdated = (data: { leaderboard: LeaderboardEntry[] }) =>
-      setLeaderboard(data.leaderboard);
+    const onLeaderboardUpdated = (data: { leaderboard: any[] }) => {
+      const mapped = data.leaderboard.map((e) => ({
+        ...e,
+        tiles: e.totalClaims || e.tiles, // map backend 'totalClaims' to frontend 'tiles'
+      }));
+      setLeaderboard(mapped);
+    };
     const onClaimFailed = (p: ClaimFailedPayload) => {
       clearPending(p.tileId);
       toast.error("Claim failed", { description: p.reason });
