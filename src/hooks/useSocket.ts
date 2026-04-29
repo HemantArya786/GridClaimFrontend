@@ -6,8 +6,6 @@ import { createSocket, type SocketLike } from "@/lib/socket";
 import { useTileStore } from "@/store/tileStore";
 import { useUserStore } from "@/store/userStore";
 import type { ClaimFailedPayload } from "@/types/tile.types";
-import type { LeaderboardEntry } from "@/types/user.types";
-import { relativeTime } from "@/lib/utils";
 
 let singleton: SocketLike | null = null;
 
